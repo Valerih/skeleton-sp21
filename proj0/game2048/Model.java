@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author Valentile
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -110,9 +110,53 @@ public class Model extends Observable {
         boolean changed;
         changed = false;
 
-        // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+        if (side != Side.NORTH) {
+            board.setViewingPerspective(side);
+        }
+
+        int size = board.size();
+        boolean[][] merged = new boolean[size][size];
+        for (int c = 0; c < size; c++) {
+            for (int r = size - 2; r >= 0; r--) {
+                Tile t = board.tile(c, r);
+
+                if (t != null) {
+                    // current tile: move? to where? merge?
+                    // up, same column, row + 1
+                    int target_column = c, target_row = r + 1;
+                    while (target_row < size) {
+                        Tile dt = board.tile(target_column, target_row);
+                        if (dt != null) {
+                            // if not moving, same row
+                            if (merged[target_column][target_row] == true || dt.value() != t.value()) {
+                                target_row--;
+                            }
+                            break;
+                        }
+
+                        if (target_row == size - 1) {
+                            break;
+                        }
+                        target_row++;
+                    }
+                    // if moving
+                    if (target_row != r) {
+                        changed = true;
+                    }
+                    // if merging
+                    if (board.move(target_column, target_row, t)) {
+                        merged[target_column][target_row] = true;
+                        score += board.tile(target_column, target_row).value();
+                    }
+                }
+            }
+        }
+
+        if (side != Side.NORTH) {
+            board.setViewingPerspective(Side.NORTH);
+        }
 
         checkGameOver();
         if (changed) {
@@ -120,6 +164,8 @@ public class Model extends Observable {
         }
         return changed;
     }
+
+
 
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
@@ -137,7 +183,15 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for (int c = 0; c < size; c++) {
+            for (int r = 0; r < size; r++) {
+                Tile t = b.tile(c, r);
+                if (t == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,7 +201,15 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for (int c = 0; c < size; c++) {
+            for (int r = 0; r < size; r++) {
+                Tile t = b.tile(c, r);
+                if (t != null && t.value() == MAX_PIECE) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -158,7 +220,27 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        if (emptySpaceExists(b)) {
+            return true;
+        }
+        int size = b.size();
+        for (int c = 0; c < size; c++) {
+            for (int r = 0; r < size; r++) {
+                Tile t = b.tile(c, r);
+                if (c > 0) {
+                    Tile t_left = b.tile(c - 1, r);
+                    if (t_left.value() == t.value()) {
+                        return true;
+                    }
+                }
+                if (r > 0) {
+                    Tile t_below = b.tile(c, r - 1);
+                    if (t_below.value() == t.value()) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
